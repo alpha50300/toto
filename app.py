@@ -1,4 +1,22 @@
 import os
+import sys
+import subprocess
+
+# --- آلية التثبيت الذاتي الذكية لضمان عمل السيرفر على Render ---
+def install_requirements_dynamically():
+    required_packages = ["Flask==3.0.2", "pyinstaller==6.5.0", "static-ffmpeg==2.5.0"]
+    for package in required_packages:
+        pkg_name = package.split("==")[0]
+        try:
+            __import__(pkg_name.replace("-", "_"))
+        except ImportError:
+            print(f"[Tool Alpha Core] {pkg_name} not found. Installing dynamically...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# تشغيل التثبيت التلقائي قبل استدعاء الـ Flask
+install_requirements_dynamically()
+
+# الآن نقوم باستدعاء المكتبات بأمان تام بعد التأكد من تثبيتها
 import shutil
 import asyncio
 import threading
@@ -15,11 +33,10 @@ UPLOAD_FOLDER = os.path.abspath("./uploads")
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# دالة ذكية لحذف الملف تلقائياً بعد 30 دقيقة (1800 ثانية) لحماية المساحة والخصوصية
 def auto_delete_file(folder_path):
     def delay_delete():
         import time
-        time.sleep(1800) # الانتظار لمدة 30 دقيقة
+        time.sleep(1800)  # حذف تلقائي بعد 30 دقيقة
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)
             print(f"[Security] Task folder {folder_path} has been self-destructed.")
@@ -54,7 +71,6 @@ async def convert_file():
     if file.filename == '':
         return jsonify({"error": "No file selected"}), 400
 
-    # إنشاء مجلد معزول فريد للعملية الحالية لمنع التداخل
     task_id = f"task_{os.urandom(4).hex()}"
     task_dir = os.path.join(app.config['UPLOAD_FOLDER'], task_id)
     input_dir = os.path.join(task_dir, "input")
@@ -71,7 +87,6 @@ async def convert_file():
     output_path = os.path.join(output_dir, output_filename)
     
     try:
-        # مسار دقة تحويل الأكواد البرمجية لـ EXE
         if target_format == "exe" and file.filename.endswith('.py'):
             work_path = os.path.join(task_dir, "build")
             args = [
@@ -80,11 +95,8 @@ async def convert_file():
                 input_path
             ]
             await run_pyinstaller(args)
-            
-        # مسار دقة تحويل الميديا عبر FFmpeg الاحترافي
         else:
             if input_path.lower().endswith(('.mp3', '.wav', '.ogg')) and target_format == 'mp4':
-                # دمج الصوت مع فيديو خلفية سوداء بدقة عالية
                 cmd = [
                     "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1280x720:d=1", 
                     "-i", input_path, "-c:v", "libx264", "-tune", "stillimage", 
@@ -97,7 +109,6 @@ async def convert_file():
             await process.communicate()
 
         if os.path.exists(output_path):
-            # بدء التدمير الذاتي للملفات بعد 30 دقيقة من الآن
             auto_delete_file(task_dir)
             return jsonify({"success": True, "redirect": f"/download-page/{task_id}/{output_filename}"})
         else:
@@ -109,5 +120,5 @@ async def convert_file():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    # تعديل الـ host والـ port ليتناسب مع السيرفرات السحابية
+    # تهيئة السيرفر للعمل السحابي
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
