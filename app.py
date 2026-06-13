@@ -2,9 +2,10 @@ import os
 import sys
 import subprocess
 
-# --- آلية التثبيت الذاتي الذكية لضمان عمل السيرفر على Render ---
+# --- آلية التثبيت الذاتي المحدثة لتتوافق مع Python 3.14 ---
 def install_requirements_dynamically():
-    required_packages = ["Flask==3.0.2", "pyinstaller==6.5.0", "static-ffmpeg==2.5.0"]
+    # أزلنا تحديد رقم الإصدار لـ pyinstaller و static-ffmpeg ليتثبت أحدث إصدار متوافق تلقائياً
+    required_packages = ["Flask==3.0.2", "pyinstaller", "static-ffmpeg"]
     for package in required_packages:
         pkg_name = package.split("==")[0]
         try:
