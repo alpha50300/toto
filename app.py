@@ -4,7 +4,6 @@ import subprocess
 
 # --- آلية التثبيت الذاتي المحدثة لتتوافق مع Python 3.14 ---
 def install_requirements_dynamically():
-    # أزلنا تحديد رقم الإصدار لـ pyinstaller و static-ffmpeg ليتثبت أحدث إصدار متوافق تلقائياً
     required_packages = ["Flask==3.0.2", "pyinstaller", "static-ffmpeg"]
     for package in required_packages:
         pkg_name = package.split("==")[0]
@@ -14,30 +13,28 @@ def install_requirements_dynamically():
             print(f"[Tool Alpha Core] {pkg_name} not found. Installing dynamically...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
-# تشغيل التثبيت التلقائي قبل استدعاء الـ Flask
 install_requirements_dynamically()
 
-# الآن نقوم باستدعاء المكتبات بأمان تام بعد التأكد من تثبيتها
 import shutil
 import asyncio
 import threading
 from flask import Flask, render_template, request, jsonify, send_from_directory
 
-# تفعيل الـ FFmpeg المدمج تلقائياً
 import static_ffmpeg
 static_ffmpeg.add_paths()
 import PyInstaller.__main__
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = os.path.abspath("./uploads")
+# استخدام مجلد /tmp الخاص ببيئات لينكس السحابية لضمان الصلاحيات المطلقة
+UPLOAD_FOLDER = "/tmp/tool_alpha_uploads"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def auto_delete_file(folder_path):
     def delay_delete():
         import time
-        time.sleep(1800)  # حذف تلقائي بعد 30 دقيقة
+        time.sleep(1800)  # تدمير ذاتي للملفات بعد 30 دقيقة لحماية الخصوصية
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)
             print(f"[Security] Task folder {folder_path} has been self-destructed.")
@@ -72,6 +69,7 @@ async def convert_file():
     if file.filename == '':
         return jsonify({"error": "No file selected"}), 400
 
+    # إنشاء معرف فريد للعملية داخل بيئة معزولة
     task_id = f"task_{os.urandom(4).hex()}"
     task_dir = os.path.join(app.config['UPLOAD_FOLDER'], task_id)
     input_dir = os.path.join(task_dir, "input")
@@ -90,13 +88,19 @@ async def convert_file():
     try:
         if target_format == "exe" and file.filename.endswith('.py'):
             work_path = os.path.join(task_dir, "build")
+            
+            # إعدادات صارمة ومخصصة لـ البيئات السحابية (تمنع التعارض الهيكلي)
             args = [
-                '--onefile', '--noconsole', '--clean',
-                '--workpath', work_path, '--distpath', output_dir,
+                '--onefile',
+                '--noconsole',
+                '--clean',
+                '--workpath', work_path,
+                '--distpath', output_dir,
                 input_path
             ]
             await run_pyinstaller(args)
         else:
+            # معالجة ملفات الصوت والفيديو والميديا بدقة
             if input_path.lower().endswith(('.mp3', '.wav', '.ogg')) and target_format == 'mp4':
                 cmd = [
                     "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1280x720:d=1", 
@@ -113,7 +117,7 @@ async def convert_file():
             auto_delete_file(task_dir)
             return jsonify({"success": True, "redirect": f"/download-page/{task_id}/{output_filename}"})
         else:
-            raise Exception("Conversion engine failed to produce the output file.")
+            raise Exception("The build/conversion engine failed to output the file. Check code structure.")
             
     except Exception as e:
         if os.path.exists(task_dir):
@@ -121,5 +125,4 @@ async def convert_file():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    # تهيئة السيرفر للعمل السحابي
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
