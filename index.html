@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTLAW CINEMA | Lunar Edition</title>
+    <!-- خطوط وأيقونات حديثة -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --moon-silver: #e2e8f0;
+            --moon-glow: rgba(197, 211, 232, 0.25);
+            --midnight-bg: #030712;
+            --card-glass: rgba(15, 23, 42, 0.75);
+            --border-lunar: rgba(226, 232, 240, 0.12);
+            --accent-cyan: #38bdf8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--midnight-bg);
+            color: var(--moon-silver);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* خلفية الأنيميشن (Canvas للنجوم وضواء القمر) */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Top Header */
+        header {
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-lunar);
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(16px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-logo {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 26px;
+            letter-spacing: 4px;
+            color: #ffffff;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 0 25px var(--moon-glow);
+        }
+
+        .brand-logo i {
+            color: var(--accent-cyan);
+            filter: drop-shadow(0 0 10px var(--accent-cyan));
+        }
+
+        .brand-logo span {
+            color: var(--accent-cyan);
+        }
+
+        .status-badge {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-cyan);
+            animation: lunarPulse 2s infinite ease-in-out;
+        }
+
+        /* Layout Grid */
+        .main-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 0 30px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 25px;
+            z-index: 1;
+        }
+
+        /* Player Section */
+        .player-wrapper {
+            background: var(--card-glass);
+            border: 1px solid var(--border-lunar);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .video-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .now-playing-bar {
+            padding: 22px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-lunar);
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .media-info h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        .media-info p {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* Sidebar Control Panel */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-card {
+            background: var(--card-glass);
+            border: 1px solid var(--border-lunar);
+            border-radius: 24px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .card-title i {
+            color: var(--accent-cyan);
+        }
+
+        /* Form Controls */
+        .custom-select-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        select {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--moon-silver);
+            border: 1px solid var(--border-lunar);
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        select:hover, select:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        @keyframes lunarPulse {
+            0% { opacity: 1; transform: scale(1); box-shadow: 0 0 5px var(--accent-cyan); }
+            50% { opacity: 0.4; transform: scale(1.3); box-shadow: 0 0 15px var(--accent-cyan); }
+            100% { opacity: 1; transform: scale(1); box-shadow: 0 0 5px var(--accent-cyan); }
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- خلفية أنيميشن الجسيمات الضوئية الفضية -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-logo">
+            <i class="fa-solid fa-moon"></i> OUTLAW <span>CINEMA</span>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div> LUNAR SYNC ACTIVE
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="main-container">
+
+        <!-- Left: Video Player -->
+        <div class="player-wrapper">
+            <div class="video-container">
+                <video id="mainPlayer" controls autoplay>
+                    Your browser does not support HTML5 Video.
+                </video>
+            </div>
+            <div class="now-playing-bar">
+                <div class="media-info">
+                    <h2 id="currentTitle">Select Media to Stream</h2>
+                    <p id="currentMeta">Choose from the control panel...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Controls -->
+        <div class="sidebar">
+            <div class="control-card">
+                <div class="card-title">
+                    <i class="fa-solid fa-satellite-dish"></i> Control Panel
+                </div>
+
+                <div class="custom-select-group">
+                    <div>
+                        <label>Category</label>
+                        <select id="categorySelect" onchange="onCategoryChange()">
+                            <option value="">-- Choose Category --</option>
+                            <option value="movies">🎥 Movies</option>
+                            <option value="series">📺 TV Series</option>
+                        </select>
+                    </div>
+
+                    <div id="mediaGroup" style="display: none;">
+                        <label>Title</label>
+                        <select id="mediaSelect" onchange="onMediaChange()">
+                            <option value="">-- Choose Title --</option>
+                        </select>
+                    </div>
+
+                    <div id="episodeGroup" style="display: none;">
+                        <label>Season & Episode</label>
+                        <select id="episodeSelect" onchange="onEpisodeChange()">
+                            <option value="">-- Choose Episode --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script: Canvas Animation & Discord Sync -->
+    <script type="module">
+        import { DiscordSDK } from "https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.1.0/+esm";
+
+        let mediaData = {};
+        let discordSdk = null;
+        let isSyncing = false;
+        const syncChannel = new BroadcastChannel('outlaw_cinema_lunar_sync');
+
+        // 1️⃣ إعداد أنيميشن الجسيمات الفضية (Moonlight Dust Animation)
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = (Math.random() - 0.5) * 0.3 - 0.1;
+                this.opacity = Math.random() * 0.7 + 0.2;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+            draw() {
+                ctx.fillStyle = `rgba(226, 232, 240, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 70; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // 2️⃣ Discord SDK Connection
+        async function setupDiscord() {
+            try {
+                discordSdk = new DiscordSDK("YOUR_CLIENT_ID");
+                await discordSdk.ready();
+                console.log("🌙 Discord Lunar Activity Ready!");
+            } catch (e) {
+                console.log("✨ Running in standalone mode.");
+            }
+        }
+        setupDiscord();
+
+        // 3️⃣ Load Data
+        fetch('data.json')
+            .then(res => res.json())
+            .then(data => { mediaData = data; })
+            .catch(err => console.error("Error loading JSON:", err));
+
+        const player = document.getElementById('mainPlayer');
+
+        // 4️⃣ Realtime Sync Engine
+        syncChannel.onmessage = (event) => {
+            const data = event.data;
+            if (!data) return;
+            isSyncing = true;
+
+            if (data.type === 'CHANGE_MEDIA') {
+                player.src = data.url;
+                document.getElementById('currentTitle').innerText = data.title;
+                document.getElementById('currentMeta').innerText = data.meta;
+                player.play();
+            } else if (data.type === 'PLAY') {
+                player.currentTime = data.time;
+                player.play();
+            } else if (data.type === 'PAUSE') {
+                player.currentTime = data.time;
+                player.pause();
+            } else if (data.type === 'SEEK') {
+                player.currentTime = data.time;
+            }
+
+            setTimeout(() => { isSyncing = false; }, 400);
+        };
+
+        function broadcast(type, payload = {}) {
+            if (isSyncing) return;
+            syncChannel.postMessage({ type, ...payload });
+        }
+
+        player.onplay = () => broadcast('PLAY', { time: player.currentTime });
+        player.onpause = () => broadcast('PAUSE', { time: player.currentTime });
+        player.onseeking = () => broadcast('SEEK', { time: player.currentTime });
+
+        // 5️⃣ UI Selectors & Handlers
+        window.onCategoryChange = function() {
+            const cat = document.getElementById('categorySelect').value;
+            const mediaGroup = document.getElementById('mediaGroup');
+            const mediaSelect = document.getElementById('mediaSelect');
+            const episodeGroup = document.getElementById('episodeGroup');
+
+            mediaSelect.innerHTML = '<option value="">-- Choose Title --</option>';
+            episodeGroup.style.display = 'none';
+
+            if (!cat) {
+                mediaGroup.style.display = 'none';
+                return;
+            }
+
+            mediaGroup.style.display = 'block';
+
+            if (cat === 'movies') {
+                mediaData.movies.forEach(m => {
+                    mediaSelect.innerHTML += `<option value="${m.id}">${m.name} (${m.duration})</option>`;
+                });
+            } else if (cat === 'series') {
+                mediaData.series.forEach(s => {
+                    mediaSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+            }
+        };
+
+        window.onMediaChange = function() {
+            const cat = document.getElementById('categorySelect').value;
+            const mediaId = document.getElementById('mediaSelect').value;
+            const episodeGroup = document.getElementById('episodeGroup');
+            const epSelect = document.getElementById('episodeSelect');
+
+            if (!mediaId) return;
+
+            if (cat === 'movies') {
+                episodeGroup.style.display = 'none';
+                const movie = mediaData.movies.find(m => m.id === mediaId);
+                
+                player.src = movie.url;
+                player.play();
+
+                const title = movie.name;
+                const meta = `Movie • Duration: ${movie.duration}`;
+
+                document.getElementById('currentTitle').innerText = title;
+                document.getElementById('currentMeta').innerText = meta;
+
+                broadcast('CHANGE_MEDIA', { url: movie.url, title, meta });
+            } else if (cat === 'series') {
+                const series = mediaData.series.find(s => s.id === mediaId);
+                epSelect.innerHTML = '<option value="">-- Choose Episode --</option>';
+                episodeGroup.style.display = 'block';
+
+                series.seasons.forEach(season => {
+                    season.episodes.forEach(ep => {
+                        epSelect.innerHTML += `<option value="${ep.url}" data-title="${series.name} - ${ep.title}" data-meta="Season ${season.season_number} • Duration: ${ep.duration}">S${season.season_number} - ${ep.title}</option>`;
+                    });
+                });
+            }
+        };
+
+        window.onEpisodeChange = function() {
+            const epSelect = document.getElementById('episodeSelect');
+            const epUrl = epSelect.value;
+            const selectedOption = epSelect.options[epSelect.selectedIndex];
+
+            if (epUrl) {
+                player.src = epUrl;
+                player.play();
+
+                const title = selectedOption.getAttribute('data-title');
+                const meta = selectedOption.getAttribute('data-meta');
+
+                document.getElementById('currentTitle').innerText = title;
+                document.getElementById('currentMeta').innerText = meta;
+
+                broadcast('CHANGE_MEDIA', { url: epUrl, title, meta });
+            }
+        };
+    </script>
+</body>
+</html>

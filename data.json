@@ -1,0 +1,28 @@
+{
+  "movies": [
+    {
+      "id": "mov_1",
+      "name": "Lunar Interstellar",
+      "duration": "148 دقيقة",
+      "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+    }
+  ],
+  "series": [
+    {
+      "id": "ser_1",
+      "name": "Moonlight Chronicles",
+      "seasons": [
+        {
+          "season_number": 1,
+          "episodes": [
+            {
+              "title": "Episode 1 - Awakening",
+              "duration": "45 دقيقة",
+              "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
