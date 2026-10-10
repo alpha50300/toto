@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTLAW CINEMA | Discord Activity Edition</title>
+    
+    <!-- خطوط وأيقونات حديثة -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Discord Embedded App SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.1.0/dist/index.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --card-bg: rgba(23, 32, 51, 0.75);
+            --accent-cyan: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.25);
+            --border-color: rgba(226, 232, 240, 0.12);
+            --text-color: #f1f5f9;
+            --discord-blurple: #5865F2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        #particleCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+        }
+
+        header {
+            width: 100%; padding: 18px 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(11, 15, 25, 0.9); backdrop-filter: blur(16px);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .brand-logo {
+            font-weight: 900; font-size: 22px; letter-spacing: 1px;
+            color: #ffffff; display: flex; align-items: center; gap: 10px;
+        }
+
+        .brand-logo i { color: var(--accent-cyan); filter: drop-shadow(0 0 10px var(--accent-cyan)); }
+        .brand-logo span { color: var(--accent-cyan); }
+
+        .status-badge {
+            background: rgba(88, 101, 242, 0.15); color: #8ea1ff;
+            border: 1px solid rgba(88, 101, 242, 0.4); padding: 6px 14px;
+            border-radius: 20px; font-size: 12px; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px; background-color: var(--discord-blurple);
+            border-radius: 50%; box-shadow: 0 0 10px var(--discord-blurple);
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .main-container {
+            max-width: 1400px; width: 100%; margin: 25px auto; padding: 0 20px;
+            display: grid; grid-template-columns: 1fr 380px; gap: 20px; z-index: 1;
+        }
+
+        .player-wrapper {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 20px; overflow: hidden; backdrop-filter: blur(12px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+        }
+
+        .video-container {
+            width: 100%; aspect-ratio: 16 / 9; background-color: #000; position: relative;
+        }
+
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .now-playing-bar {
+            padding: 18px 22px; border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .media-info h2 { font-size: 17px; font-weight: 700; color: #fff; }
+        .media-info p { font-size: 13px; color: #94a3b8; margin-top: 3px; }
+
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+        .control-card {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 20px; padding: 20px; backdrop-filter: blur(12px);
+        }
+
+        .card-title {
+            font-size: 15px; font-weight: 700; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 10px; color: #fff;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 10px;
+        }
+
+        .card-title i { color: var(--accent-cyan); }
+
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+
+        label { font-size: 12px; color: #94a3b8; font-weight: 700; }
+
+        input, select {
+            width: 100%; background: rgba(11, 15, 25, 0.8); color: var(--text-color);
+            border: 1px solid var(--border-color); padding: 11px 14px; border-radius: 12px;
+            font-size: 13px; font-family: inherit; outline: none; transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-cyan); box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .btn-play {
+            width: 100%; background: var(--accent-cyan); color: #000; border: none;
+            padding: 13px; border-radius: 12px; font-weight: 900; font-size: 14px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 8px; transition: all 0.3s ease; margin-top: 5px;
+        }
+
+        .btn-play:hover { opacity: 0.9; box-shadow: 0 0 25px var(--accent-glow); transform: translateY(-2px); }
+
+        .btn-next {
+            background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--border-color);
+            padding: 8px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: 0.2s;
+        }
+
+        .btn-next:hover { background: rgba(255, 255, 255, 0.18); }
+
+        .status-log {
+            font-size: 12px; color: var(--accent-cyan); margin-top: 10px; text-align: center; font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 1024px) { .main-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <canvas id="particleCanvas"></canvas>
+
+    <header>
+        <div class="brand-logo">
+            <i class="fa-brands fa-discord"></i> OUTLAW <span>DISCORD ACTIVITY</span>
+        </div>
+        <div class="status-badge" id="discordStatus">
+            <div class="status-dot"></div> جاري الاتصال بـ Discord...
+        </div>
+    </header>
+
+    <div class="main-container">
+
+        <!-- القسم الأيسر: مشغل الفيديو -->
+        <div class="player-wrapper">
+            <div class="video-container">
+                <iframe id="mainPlayer" allowfullscreen src="about:blank"></iframe>
+            </div>
+            <div class="now-playing-bar">
+                <div class="media-info">
+                    <h2 id="displayTitle">جاهز للبدء والمشاهدة</h2>
+                    <p id="displayMeta">ضع الرابط أو الـ ID واضغط على تشغيل</p>
+                </div>
+                <button class="btn-next" onclick="switchToNextServer()">
+                    <i class="fa-solid fa-rotate"></i> السيرفر التالي
+                </button>
+            </div>
+        </div>
+
+        <!-- القسم الأيمن: لوحة التحكم والإدخال -->
+        <div class="sidebar">
+            <div class="control-card">
+                <div class="card-title">
+                    <i class="fa-solid fa-sliders"></i> التحكم والمشاهدة الجماعية
+                </div>
+
+                <div class="form-group">
+                    <label>رابط IMDb/TMDB أو الـ ID</label>
+                    <input type="text" id="urlOrIdInput" placeholder="مثال: https://www.imdb.com/title/tt0903747/ أو tt0903747" oninput="autoDetectInput()">
+                </div>
+
+                <div class="form-group">
+                    <label>نوع المحتوى</label>
+                    <select id="mediaType" onchange="toggleType()">
+                        <option value="movie">🎥 فيلم (Movie)</option>
+                        <option value="tv">📺 مسلسل (TV Show)</option>
+                    </select>
+                </div>
+
+                <!-- خيارات المواسم والحلقات للمسلسلات -->
+                <div id="seriesOptions" class="form-group" style="display: none;">
+                    <label>تحديد الجزء والحلقة</label>
+                    <div class="row-inputs">
+                        <input type="number" id="seasonNum" placeholder="الجزء (Season)" value="1" min="1">
+                        <input type="number" id="episodeNum" placeholder="الحلقة (Episode)" value="1" min="1">
+                    </div>
+                </div>
+
+                <button class="btn-play" onclick="smartSearchAndPlay()">
+                    <i class="fa-solid fa-bolt"></i> تشغيل وبدء البث
+                </button>
+
+                <div id="statusLog" class="status-log"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script: Discord SDK integration & Cinema logic -->
+    <script type="module">
+        import { DiscordSDK } from "https://cdn.jsdelivr.net/npm/@discord/embedded-app-sdk@1.1.0/+esm";
+
+        // ⚠️ ضع هنا الـ APPLICATION ID الخاص بك من Discord Developer Portal
+        const CLIENT_ID = "1151198369058926592"; 
+        
+        let discordSdk = null;
+
+        // 1️⃣ إعداد Discord Embedded Activity
+        async function initDiscordActivity() {
+            const statusBadge = document.getElementById('discordStatus');
+            try {
+                discordSdk = new DiscordSDK(CLIENT_ID);
+                await discordSdk.ready();
+
+                // المصادقة
+                const { code } = await discordSdk.commands.authorize({
+                    client_id: CLIENT_ID,
+                    response_type: "code",
+                    state: "",
+                    prompt: "none",
+                    scope: ["identify", "guilds"],
+                });
+
+                statusBadge.innerHTML = `<div class="status-dot"></div> Discord Activity Active`;
+                console.log("🚀 Activity Started inside Discord!");
+
+                // تحديث حالة النشاط الأولية
+                updateDiscordPresence("في الواجهة الرئيسية", "يتصفح قائمة الأفلام");
+
+            } catch (err) {
+                statusBadge.innerHTML = `<div class="status-dot" style="background:#38bdf8;box-shadow:0 0 10px #38bdf8;"></div> Standalone Mode`;
+                console.warn("✨ Running outside Discord or in browser preview mode.");
+            }
+        }
+
+        // تحديث حالة الـ Rich Presence في ديسكورد
+        async function updateDiscordPresence(details, state) {
+            if (!discordSdk) return;
+            try {
+                await discordSdk.commands.setActivity({
+                    activity: {
+                        details: details,
+                        state: state,
+                        timestamps: { start: Date.now() },
+                        assets: {
+                            large_image: "icon",
+                            large_text: "Outlaw Cinema"
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Error updating presence:", e);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", initDiscordActivity);
+
+        // 2️⃣ أنيميشن الخلفية
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5; this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = (Math.random() - 0.5) * 0.3 - 0.1; this.opacity = Math.random() * 0.7 + 0.2;
+            }
+            update() {
+                this.x += this.speedX; this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(226, 232, 240, ${this.opacity})`; ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        for (let i = 0; i < 50; i++) particles.push(new Particle());
+        function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
+        animate();
+
+        // 3️⃣ سيرفرات البث المتنوعة
+        const servers = [
+            { name: "VidSrc Pro", getUrl: (type, id, s, e) => type === 'movie' ? `https://vidsrc.cc/v2/embed/movie/${id}` : `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}` },
+            { name: "VidSrc VIP", getUrl: (type, id, s, e) => type === 'movie' ? `https://vidsrc.vip/embed/movie/${id}` : `https://vidsrc.vip/embed/tv/${id}/${s}/${e}` },
+            { name: "SuperEmbed", getUrl: (type, id, s, e) => type === 'movie' ? `https://multiembed.mov/directstream.php?video_id=${id}` : `https://multiembed.mov/directstream.php?video_id=${id}&s=${s}&e=${e}` },
+            { name: "VidSrc XYZ", getUrl: (type, id, s, e) => type === 'movie' ? `https://vidsrc.xyz/embed/movie?imdb=${id}` : `https://vidsrc.xyz/embed/tv?imdb=${id}&season=${s}&episode=${e}` },
+            { name: "2Embed", getUrl: (type, id, s, e) => type === 'movie' ? `https://www.2embed.cc/embed/${id}` : `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}` }
+        ];
+
+        let currentServerIndex = 0;
+        let currentExtractedId = '';
+
+        window.autoDetectInput = function() {
+            const val = document.getElementById('urlOrIdInput').value.trim();
+            const mediaType = document.getElementById('mediaType');
+            
+            const imdbMatch = val.match(/tt\d+/);
+            if (imdbMatch) {
+                currentExtractedId = imdbMatch[0];
+            } else {
+                currentExtractedId = val;
+            }
+
+            if (val.includes('/tv/') || val.includes('series') || (val.includes('/title/tt') && val.includes('episode'))) {
+                mediaType.value = 'tv';
+            }
+            window.toggleType();
+        };
+
+        window.toggleType = function() {
+            const type = document.getElementById('mediaType').value;
+            document.getElementById('seriesOptions').style.display = (type === 'tv') ? 'block' : 'none';
+        };
+
+        window.smartSearchAndPlay = function() {
+            window.autoDetectInput();
+            const type = document.getElementById('mediaType').value;
+            const season = document.getElementById('seasonNum').value;
+            const episode = document.getElementById('episodeNum').value;
+
+            if (!currentExtractedId) {
+                alert('الرجاء إدخال رابط أو ID صحيح أولاً!');
+                return;
+            }
+
+            currentServerIndex = 0;
+            loadCurrentServer(type, currentExtractedId, season, episode);
+        };
+
+        function loadCurrentServer(type, id, season, episode) {
+            const server = servers[currentServerIndex];
+            const url = server.getUrl(type, id, season, episode);
+            const player = document.getElementById('mainPlayer');
+            const log = document.getElementById('statusLog');
+
+            player.src = url;
+
+            const title = (type === 'movie') ? `عرض فيلم (${id})` : `عرض مسلسل (${id})`;
+            const meta = (type === 'movie') ? `المنصة: ${server.name}` : `الموسم ${season} - الحلقة ${episode} | المنصة: ${server.name}`;
+
+            document.getElementById('displayTitle').innerText = title;
+            document.getElementById('displayMeta').innerText = meta;
+            log.innerText = `✅ تشغيل عبر: ${server.name}`;
+
+            // تحديث حالة ديسكورد بالفيلم/المسلسل الحالي
+            updateDiscordPresence(title, meta);
+        }
+
+        window.switchToNextServer = function() {
+            const type = document.getElementById('mediaType').value;
+            const season = document.getElementById('seasonNum').value;
+            const episode = document.getElementById('episodeNum').value;
+
+            if (!currentExtractedId) {
+                alert('قم بالبحث وإدخال ID أولاً!');
+                return;
+            }
+
+            currentServerIndex = (currentServerIndex + 1) % servers.length;
+            loadCurrentServer(type, currentExtractedId, season, episode);
+        };
+    </script>
+</body>
+</html>
