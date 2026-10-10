@@ -1,10 +1,11 @@
+// تثبيت المكتبات: npm install express dotenv cors
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
-app.use(express.static('.')); // تشغيل ملف index.html والملفات الثابتة تلقائياً
+app.use(express.static('.')); // تشغيل ملف index.html تلقائياً
 
 // نقطة جلب بيانات الفيلم تلقائياً من TMDB دون إظهار API Key للعامة
 app.get('/api/info/:type/:id', async (req, res) => {
